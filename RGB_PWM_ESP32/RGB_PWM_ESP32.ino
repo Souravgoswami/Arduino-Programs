@@ -55,9 +55,6 @@ unsigned char decimal_r = 100, decimal_g = 100, decimal_b = 100;
 int cycleB = 0;
 char colourStr[7] ;
 
-const unsigned int stopAPTime = millis() + 10000;
-unsigned char stopped = 0;
-
 void loop() {
 	// WiFi stuff
 	WiFiClient client = server.available(); 
@@ -136,11 +133,6 @@ void loop() {
 		client.stop();
 	}
 
-	if (!stopped && stopAPTime > millis()) {
-		Serial.println("He");
-		// WiFi.softAPdisconnect(true);
-	}
-
 	// Light stuff
 	ledcWrite(0, decimal_r);
 	ledcWrite(1, decimal_g);
@@ -149,6 +141,4 @@ void loop() {
 	ledcWrite(3, decimal_r);
 	ledcWrite(4, decimal_g);
 	ledcWrite(5, decimal_b);
-
-	Serial.println("Hel");
 }
