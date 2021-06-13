@@ -40,17 +40,18 @@ void hex2RGBPercent(unsigned int colour, unsigned char decimals[3]) {
 WiFiServer server(80) ;
 
 void setup() {
-	ledcSetup(0, FREQ, RES) ;
-
-	ledcAttachPin(RED, 0) ;
-	ledcAttachPin(GREEN, 1) ;
-	ledcAttachPin(BLUE, 2) ;
-
 	// WiFi stuff
 	WiFi.softAP(ssid, password) ;
 	IPAddress myIP = WiFi.softAPIP() ; 
 	WiFi.setTxPower(WIFI_POWER_2dBm) ;
 	server.begin() ;
+
+	// LED Stuff
+	ledcSetup(0, FREQ, RES) ;
+
+	ledcAttachPin(RED, 0) ;
+	ledcAttachPin(GREEN, 1) ;
+	ledcAttachPin(BLUE, 2) ;
 }
 
 unsigned int colour = 0x00aaaa ;
@@ -107,8 +108,9 @@ void loop() {
 						if (currentLine.indexOf("GET") == 0) {
 							char y[currentLine.length() + 1] ;
 							strcpy(y, currentLine.c_str()) ;
-							sscanf(y, (char *)"%*s /?colour=%%23%6s", colourStr) ;
-							if(strlen(colourStr) == 6) {
+							unsigned char status = sscanf(y, (char *)"%*s /?colour=%%23%6s", colourStr) ;
+
+							if(status == 1) {
 								colour = strtoul(colourStr, NULL, 16) ;
 								hex2RGBPercent(colour, decimals) ;
 							}
