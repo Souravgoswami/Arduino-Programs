@@ -3,75 +3,79 @@
 #define __SSID__ "Sourav's RGB Light! (SRGBL)"
 #define __PASS__ "hexrgblight"
 
-#define RED1 13
-#define GREEN1 12
-#define BLUE1 14
+#define RED 13
+#define GREEN 12
+#define BLUE 14
 
-#define RED2 27
-#define GREEN2 26
-#define BLUE2 25
+#define R_FULL 40
+#define G_FULL 100
+#define B_FULL 100
 
 #define FREQ 5000
 #define RES 8
 
 // Set these to your desiRED3 cRED3entials.
-const char *ssid = __SSID__;
-const char *password = __PASS__;
+const char *ssid = __SSID__ ;
+const char *password = __PASS__ ;
 
 # include <WiFi.h> 
 #include <WiFiClient.h>
 #include <WiFiAP.h>
 
-WiFiServer server(80);
+void hex2RGBPercent(unsigned int colour, unsigned char decimals[3]) {
+	unsigned char r = colour >> 16 ;
+	unsigned char g = 255 & (colour >> 8) ;
+	unsigned char b = 255 & colour ;
 
-void setup() {
-	ledcSetup(0, FREQ, RES);
+	// Convert value to percentage for PWM
+	decimals[0] = round((r * R_FULL) / 255.0) ;
+	decimals[1] = round((g * G_FULL) / 255.0) ;
+	decimals[2] = round((b * B_FULL) / 255.0) ;
 
-	ledcAttachPin(RED1, 0);
-	ledcAttachPin(GREEN1, 1);
-	ledcAttachPin(BLUE1, 2);	
-
-	ledcAttachPin(RED2, 3);
-	ledcAttachPin(GREEN2, 4);
-	ledcAttachPin(BLUE2, 5);	
-
-	// WiFi stuff
-	WiFi.softAP(ssid, password);
-	IPAddress myIP = WiFi.softAPIP();
-	server.begin();
-
-	Serial.println("Server started");
+	if(decimals[0] > 100) decimals[0] = 100 ;
+	if(decimals[1] > 100) decimals[1] = 100 ;
+	if(decimals[2] > 100) decimals[2] = 100 ;
 }
 
-int dutyCycle ;
+WiFiServer server(80) ;
 
-unsigned int colour = 0x888888;
-unsigned char r = 255;
-unsigned char g = 255;
-unsigned char b = 255;
+void setup() {
+	ledcSetup(0, FREQ, RES) ;
 
-unsigned char decimal_r = 100, decimal_g = 100, decimal_b = 100;
+	ledcAttachPin(RED, 0) ;
+	ledcAttachPin(GREEN, 1) ;
+	ledcAttachPin(BLUE, 2) ;
 
-int cycleB = 0;
+	// WiFi stuff
+	WiFi.softAP(ssid, password) ;
+	IPAddress myIP = WiFi.softAPIP() ; 
+	WiFi.setTxPower(WIFI_POWER_2dBm) ;
+	server.begin() ;
+}
+
+unsigned int colour = 0x00aaaa ;
+unsigned char decimals[3] ;
+
 char colourStr[7] ;
 
 void loop() {
+	hex2RGBPercent(colour, decimals) ;
+
 	// WiFi stuff
-	WiFiClient client = server.available(); 
+	WiFiClient client = server.available() ; 
 
 	if (client) {
-		String currentLine = "";
+		String currentLine = "" ;
 	
 		while (client.connected()) {
-			Serial.println("Hi");
 			if (client.available()) {
-				char c = client.read();
+				char c = client.read() ;
 
 				if (c == '\n') {
 					if (currentLine.length() == 0) {
-						client.println("HTTP/1.1 200 OK");
-						client.println("Content-type:text/html");
-						client.println();
+						client.println("HTTP/1.1 200 OK") ;
+						client.println("Content-type:text/html") ;
+						client.println() ;
 
 						client.print(
 							"<!Doctype HTML>"
@@ -95,50 +99,34 @@ void loop() {
 							"</body>"
 
 							"</html>"
-						);
+						) ;
 	
-						client.println();
-						break;
+						client.println() ;
+						break ;
 					} else {
 						if (currentLine.indexOf("GET") == 0) {
-							char y[currentLine.length() + 1];
-							strcpy(y, currentLine.c_str());
-							sscanf(y, (char *)"%*s /?colour=%%23%6s", colourStr);
+							char y[currentLine.length() + 1] ;
+							strcpy(y, currentLine.c_str()) ;
+							sscanf(y, (char *)"%*s /?colour=%%23%6s", colourStr) ;
 							if(strlen(colourStr) == 6) {
-								colour = strtoul(colourStr, NULL, 16);
-
-								r = colour >> 16;
-								g = 255 & (colour >> 8);
-								b = 255 & colour;
-
-								// Convert value to percentage for PWM
-								decimal_r = round((r * 100.0) / 255.0) ;
-								decimal_g = round((g * 100.0) / 255.0) ;
-								decimal_b = round((b * 100.0) / 255.0) ;
-							
-								if(decimal_r > 100) decimal_r = 100;
-								if(decimal_g > 100) decimal_g = 100;
-								if(decimal_b > 100) decimal_b = 100;
+								colour = strtoul(colourStr, NULL, 16) ;
+								hex2RGBPercent(colour, decimals) ;
 							}
 						}
 						
-						currentLine = "";
+						currentLine = "" ;
 					}
 				} else if (c != '\r') {
-					currentLine += c;
+					currentLine += c ; 
 				}
 			}
 		}
 
-		client.stop();
+		client.stop() ;
 	}
 
 	// Light stuff
-	ledcWrite(0, decimal_r);
-	ledcWrite(1, decimal_g);
-	ledcWrite(2, decimal_b);
-
-	ledcWrite(3, decimal_r);
-	ledcWrite(4, decimal_g);
-	ledcWrite(5, decimal_b);
+	ledcWrite(0, decimals[0]) ;
+	ledcWrite(1, decimals[1]) ;
+	ledcWrite(2, decimals[2]) ;
 }
