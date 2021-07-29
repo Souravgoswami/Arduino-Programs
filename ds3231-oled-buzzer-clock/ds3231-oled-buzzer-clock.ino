@@ -7,7 +7,8 @@
 #define DISPLAYROTATION 0
 #define TEXTWRAP false
 #define SPLITTER_DELAY 250
-#define PARTICLES 75
+#define PARTICLES 80
+#define PARTICLES_FALL 40
 
 #define BUZZER 11
 #define BUZZ_DELAY 50
